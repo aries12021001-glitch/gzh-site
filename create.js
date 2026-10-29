@@ -53,20 +53,13 @@ function imgSample(id){
 function createPage(){
   const s = crState(); const vip = isVip(); const dir = DIRS.find(x=>x.id===s.dir) || DIRS[0];
   const types = CR.types[s.dir==="minsheng"?"minsheng":"other"];
-  const layout = CR.layouts.find(l=>l.id===s.layout) || CR.layouts[0];
-  const img = CR.images.find(i=>i.id===s.imgStyle) || CR.images[0];
-  const outline = OUTLINE[s.type] || OUTLINE["干货文"];
-  const mins = Math.max(2, Math.round(s.words/400));
-  const per = Math.round(s.words/outline.length/10)*10;
   const hot = (topicsData && topicsData.keywords || []).filter(k=>k.niche===dir.name).slice(0,6);
   if(!topicsData && !topicsErr) loadTopics();
-  const titleShown = s.title || (s.topic ? `${s.topic}，你真的算清楚了吗？` : "（选好选题后，这里出现标题）");
-  const titleWarn = s.title ? makeTitleCheck(s.title) : [];
   return `
   <button class="back" data-go="">返回首页</button>
   <header style="display:grid;gap:10px">
     <h1 style="font-size:clamp(28px,5vw,40px)">写一篇</h1>
-    <p style="color:var(--muted);max-width:40em">每一项都可以自己选，右边的预览马上跟着变。不想选，就点「一键自动」，按推荐方案一次跑完，结果照样能改。</p>
+    <p style="color:var(--muted);max-width:40em">每一项都可以自己选，手机预览马上跟着变。不想选，就点「一键自动」，按推荐方案一次跑完，结果照样能改。</p>
     <div class="chips" style="gap:12px"><button class="btn" data-cr-auto>一键自动</button><button class="pill" data-cr-reset>全部重选</button><span style="font-size:13px;color:var(--muted)">方向：${esc(dir.name)}（在设置里可以换）</span></div>
   </header>
   ${crNote ? `<div class="memo" role="status">${crNote} <button class="linkbtn" data-go="vip">去开通会员</button></div>` : ""}
@@ -100,20 +93,57 @@ function createPage(){
         <div class="chips" style="gap:12px"><button class="btn" data-cr-brief>出写作提纲</button><button class="pill" data-cr-full>AI 写全文（20 点）</button></div>
       </section>
     </div>
-    <aside class="preview" aria-label="预览">
-      <p class="pv-label">预览</p>
-      <div class="pv-cover">${imgSample(s.imgStyle)}</div>
-      <h3 class="pv-title">${esc(titleShown)}</h3>
-      ${titleWarn.length?`<p class="pv-warn">${esc(titleWarn.join("；"))}</p>`:(s.title?`<p class="pv-ok">标题自检通过</p>`:"")}
-      <p class="pv-meta">${esc(s.type)}，约 ${s.words} 字，读完约 ${mins} 分钟，配 ${s.imgCount} 张${esc(img.name)}，${esc(layout.name)}排版</p>
-      <ol class="pv-outline">${outline.map((h,i)=>`<li><span style="${layout.head}">${esc(h)}</span><em>约 ${per} 字${i===0&&s.imgCount>0?"，放第 1 张图":i===outline.length-2&&s.imgCount>1?"，放第 2 张图":""}</em></li>`).join("")}</ol>
-      <p class="pv-sample">正文示意：今年前三季度，全国居民人均可支配收入 <b style="color:${layout.num}">34230 元</b>。我第一眼看到，愣了一下。</p>
-    </aside>
+    ${previewHTML()}
   </div>
   ${crBrief ? `<section class="sticker" style="gap:10px"><h2>写作提纲</h2><div class="draft" id="cr-brief">${esc(crBrief)}</div>
     <div class="chips" style="gap:10px"><button class="pill" data-cr-copy>复制提纲</button><a class="pill" href="https://claude.ai/artifact/Mg7dzg3ZoovB4BX3aEYPbM#${esc(s.dir)}" target="_blank" rel="noopener">带着提纲去 Claude 版写全文（新窗口打开）</a></div></section>` : ""}`;
 }
 let crBrief = "";
+let crTry = null;      // 非会员点了会员项：只在预览里试看，不存进草稿
+let crChanged = "";    // 刚改的是哪一项，预览里对应的位置闪一下
+
+// 预览：做成一部手机，上面是订阅号消息列表里的样子，下面是文章正文
+function previewHTML(){
+  const s = Object.assign(crState(), crTry || {});
+  const layout = CR.layouts.find(l=>l.id===s.layout) || CR.layouts[0];
+  const img = CR.images.find(i=>i.id===s.imgStyle) || CR.images[0];
+  const outline = OUTLINE[s.type] || OUTLINE["干货文"];
+  const mins = Math.max(2, Math.round(s.words/400));
+  const per = Math.round(s.words/outline.length/10)*10;
+  const topic = s.topic || "公积金能交物业费了";
+  const title = s.title || `${topic}，你真的算清楚了吗？`;
+  const titleWarn = s.title ? makeTitleCheck(s.title) : [];
+  const hl = k => crChanged===k ? " pv-hit" : "";
+  // 第 k 张图放在第几节后面
+  const imgAt = {}; for(let k=0;k<s.imgCount;k++) imgAt[Math.floor(k*outline.length/s.imgCount)] = (imgAt[Math.floor(k*outline.length/s.imgCount)]||0)+1;
+  const lines = Math.max(2, Math.min(8, Math.round(per/80)));
+  const bars = n => Array.from({length:n},(_,i)=>`<i style="width:${i===n-1?55:88+((i*37)%12)}%"></i>`).join("");
+  let n = 0;
+  const body = outline.map((h,i)=>`
+      <h4 class="art-h${hl("type")}">${esc(h)}</h4>
+      ${i===0 ? `<p class="art-p">${esc(topic)}。今年前三季度，全国居民人均可支配收入 <b class="art-num">34230 元</b>，我第一眼看到，愣了一下。</p>` : ""}
+      <div class="art-lines${hl("words")}">${bars(i===0?lines-1:lines)}</div>
+      ${Array.from({length:imgAt[i]||0},()=>`<figure class="art-img${hl("imgStyle")}${hl("imgCount")}">${imgSample(s.imgStyle)}<figcaption>第 ${++n} 张图</figcaption></figure>`).join("")}`).join("");
+  return `<aside class="preview" aria-label="预览" aria-live="polite">
+      <p class="pv-label">预览：读者在手机上看到的样子${s.topic?"":"（还没写选题，先用示例）"}</p>
+      ${crTry ? `<p class="pv-try">正在试看会员效果，开通会员后可以应用</p>` : ""}
+      <div class="phone">
+        <div class="feed${hl("title")}${hl("topic")}${hl("imgStyle")}">
+          <div class="feed-cover">${imgSample(s.imgStyle)}</div>
+          <p class="feed-title">${esc(title)}</p>
+        </div>
+        ${titleWarn.length?`<p class="pv-warn">${esc(titleWarn.join("；"))}</p>`:(s.title?`<p class="pv-ok">标题自检通过</p>`:"")}
+        <article class="art lay-${layout.id}${hl("layout")}">
+          <h3 class="art-title">${esc(title)}</h3>
+          <p class="art-meta${hl("words")}${hl("type")}">${esc(s.type)}，约 ${s.words} 字，读完约 ${mins} 分钟</p>
+          ${body}
+        </article>
+      </div>
+      <p class="pv-meta">共 ${outline.length} 节，每节约 ${per} 字；配 ${s.imgCount} 张${esc(img.name)}；${esc(layout.name)}排版</p>
+    </aside>`;
+}
+function refreshPreview(){ const el = app.querySelector(".preview"); if(el) el.outerHTML = previewHTML(); }
+
 function makeTitleCheck(t){
   const len = [...t].length; const w = [];
   if(len<12) w.push("太短，信息不够"); if(len>32) w.push("太长，手机上会被截断");
@@ -127,29 +157,35 @@ function buildBrief(s){
   return [`标题：${s.title || "（待定）"}`, `选题：${s.topic || "（待定）"}`, `类型：${s.type}，约 ${s.words} 字`, `配图：${s.imgCount} 张${img.name}`, `排版：${lay.name}`, "", "提纲：",
     ...outline.map((h,i)=>`${i+1}. ${h}（约 ${per} 字）`), "", "写作规矩：每个数字和政策都写出处；不编造个人经历；多用「我」和口语，长短句交替；标题里的悬念正文要兑现。"].join("\n");
 }
-function crGate(isVipOpt){ if(isVipOpt && !isVip()){ crNote = "这一项是会员功能，开通会员后可以应用。现在先给你看效果，不会真的用上。"; return false; } crNote = ""; return true; }
+// 会员项：会员直接应用；非会员只在预览里试看，并提示开通后可以应用
+function crPick(isVipOpt, p){
+  if(isVipOpt && !isVip()){ crTry = p; crNote = "这一项是会员功能，预览里先给你试看效果；开通会员后可以应用。"; return; }
+  crTry = null; crNote = ""; crSave(p);
+}
 
 app.addEventListener("click", e=>{
   const o = e.target.closest("[data-cr]");
   if(o){
     const g = o.dataset.cr, v = o.dataset.val;
-    if(g==="hot"){ if(crGate(true)) crSave({topic:v, title:""}); render(); return; }
-    if(g==="title"){ if(crGate(true)) crSave({title:v}); render(); return; }
-    if(g==="imgStyle"){ const im = CR.images.find(i=>i.id===v); if(im.vip && !isVip()){ crGate(true); render(); return; } crGate(false); crSave({imgStyle:v}); render(); return; }
-    if(g==="layout"){ const l = CR.layouts.find(x=>x.id===v); if(l.vip && !isVip()){ crGate(true); render(); return; } crGate(false); crSave({layout:v}); render(); return; }
-    crNote = ""; crSave({[g]: (g==="words"||g==="imgCount") ? +v : v}); render(); return;
+    crChanged = g==="hot" ? "topic" : g;
+    if(g==="hot") crPick(true, {topic:v, title:""});
+    else if(g==="title") crPick(true, {title:v});
+    else if(g==="imgStyle") crPick(CR.images.find(i=>i.id===v).vip, {imgStyle:v});
+    else if(g==="layout") crPick(CR.layouts.find(x=>x.id===v).vip, {layout:v});
+    else crPick(false, {[g]: (g==="words"||g==="imgCount") ? +v : v});
+    render(); return;
   }
   if(e.target.closest("[data-cr-auto]")){
     const d = crDefaults(); const dir = DIRS.find(x=>x.id===d.dir);
     const hot = (topicsData && topicsData.keywords || []).filter(k=>k.niche===dir.name);
     const topic = isVip() && hot[0] ? hot[0].kw : (crState().topic || (d.dir==="minsheng" ? "公积金能交物业费了" : dir.kw.split("、")[0]));
     const title = isVip() ? makeTitles({who:d.dir==="minsheng"?"打工人":"读者", what:topic, num:"", gain:"能少走弯路"})[0].t : crState().title;
-    crSave(Object.assign(d, {topic, title, imgStyle:isVip()?"photo":"data", layout:"a"}));
+    crSave(Object.assign(d, {topic, title, imgStyle:isVip()?"photo":"data", layout:"a"})); crTry = null; crChanged = "";
     crBrief = buildBrief(crState());
     crNote = isVip() ? "" : "已按免费方案自动跑完。开通会员后，自动选题会用最新热点，标题用爆款公式，还能配 AI 写实照片。";
     render(); document.getElementById("cr-brief")?.scrollIntoView({block:"center"}); return;
   }
-  if(e.target.closest("[data-cr-reset]")){ patch(a=>{ a.draft = {}; }); crBrief = ""; crNote = ""; render(); return; }
+  if(e.target.closest("[data-cr-reset]")){ patch(a=>{ a.draft = {}; }); crBrief = ""; crNote = ""; crTry = null; crChanged = ""; render(); return; }
   if(e.target.closest("[data-cr-brief]")){ const s = crState(); if(!s.topic){ toast("先写一个选题"); return; } crBrief = buildBrief(s); render(); document.getElementById("cr-brief")?.scrollIntoView({block:"center"}); return; }
   if(e.target.closest("[data-cr-full]")){
     if(!isVip() && points() < COST.article){ crNote = `AI 写全文要 ${COST.article} 点，你现在有 ${points()} 点。买点数后可以应用。`; render(); return; }
@@ -158,8 +194,12 @@ app.addEventListener("click", e=>{
   }
   if(e.target.closest("[data-cr-copy]")){ const el = document.getElementById("cr-brief"); navigator.clipboard.writeText(el.textContent).then(()=>toast("提纲已复制")).catch(()=>{ const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("已选中，按 Ctrl+C 复制"); }); return; }
 });
+// 打字时只刷新预览（整页重画会让输入框失去焦点）；离开输入框再整页刷新，出标题候选
+app.addEventListener("input", e=>{
+  if(e.target.id==="cr-topic"){ crTry = null; crChanged = "topic"; crSave({topic:e.target.value.trim(), title:""}); refreshPreview(); }
+  if(e.target.id==="cr-title"){ crTry = null; crChanged = "title"; crSave({title:e.target.value.trim()}); refreshPreview(); }
+});
 app.addEventListener("change", e=>{
-  if(e.target.id==="cr-topic"){ crNote = ""; crSave({topic:e.target.value.trim(), title:""}); render(); }
-  if(e.target.id==="cr-title"){ crNote = ""; crSave({title:e.target.value.trim()}); render(); }
+  if(e.target.id==="cr-topic" || e.target.id==="cr-title"){ crNote = ""; render(); }
 });
 TOOL_PAGES.create = createPage;
