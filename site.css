@@ -28,3 +28,26 @@ html,body{margin:0}
 /* 手机上吉祥物缩小，挂在对话气泡右边，不单独占一行 */
 .hero{position:relative}
 @media (max-width:520px){.hero .mascot{position:absolute;top:-6px;right:0;width:68px;height:68px;margin:0}}
+
+/* 工具箱 */
+.field{font:inherit;font-size:15px;padding:9px 12px;border-radius:12px;border:2px solid var(--line);background:var(--sheet);color:var(--ink);width:100%}
+textarea.field{line-height:1.8}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.form label{display:grid;gap:6px;font-weight:700;font-size:14px}
+.row-in{display:flex;gap:10px}.row-in .field{flex:1;min-width:0}
+.lock{background:var(--sun-soft)}
+.meter{height:12px;border:2px solid var(--line);border-radius:999px;background:var(--sheet);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--coral)}
+.imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.imgs figure{margin:0;display:grid;gap:4px;font-size:12px;color:var(--muted)}
+.imgs img{width:100%;aspect-ratio:4/3;object-fit:cover;border:2px solid var(--line);border-radius:10px;background:var(--sheet)}
+.bad-mark{background:var(--coral-soft);color:var(--bad);font-weight:700;padding:0 2px;border-radius:3px}
+.good-mark{background:var(--mint-soft);color:var(--ok);padding:0 2px;border-radius:3px}
+.qa{display:grid;gap:4px}.qa .why{font-size:13px;color:var(--muted)}
+.qa-list{display:grid;gap:10px;background:var(--sun-soft);border-radius:10px;padding:10px 12px}
+.hours{width:5.5em;padding:4px 8px;font-size:14px}
+.confirm{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:22;width:min(420px,calc(100vw - 32px));background:var(--sheet)}
+.draft{white-space:pre-wrap;background:var(--page);border:2px dashed var(--line);border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.9;max-height:520px;overflow-y:auto}
+/* 手机顶栏：网站名不换行，登录入口收进头像 */
+.topbar .brand{white-space:nowrap}
+@media (max-width:520px){.topbar .brand{font-size:17px}.topbar .pill[data-go="login"]{display:none}}

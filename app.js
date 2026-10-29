@@ -74,6 +74,7 @@ function topbar(){
   return `<nav class="topbar" aria-label="顶部">
     <button class="brand" data-go="">公众号新手向导</button>
     <span style="flex:1"></span>
+    <button class="pill small" data-go="tools">工具箱</button>
     ${mine?`<button class="pill small" data-go="${mine.id}">我的方向：${esc(mine.name)}</button>`:""}
     ${ph ? `<button class="avatar" data-open-settings aria-label="打开设置" aria-expanded="${drawer}">${esc(ph.slice(-2))}</button>`
          : `<button class="pill" data-go="login">登录 / 注册</button><button class="avatar" data-open-settings aria-label="打开设置" aria-expanded="${drawer}">客</button>`}
@@ -219,6 +220,7 @@ function page(d){
           ${s.minsheng && d.ready?`<p class="mine-note">${esc(s.minsheng)}</p>`:""}
           ${s.minsheng && !d.ready && i===4?`<p class="pending">本方向的写作标准还在根据真实爆文整理，11 月中旬补上。</p>`:""}
           ${s.link?`<p style="font-size:14px"><a href="${s.link[1]}" target="_blank" rel="noopener">${esc(s.link[0])}</a></p>`:""}
+          ${s.qs?`<div class="qa-list">${s.qs.map((q,j)=>`<div class="qa"><b>${j+1}. ${esc(q[0])}</b><p class="why">${esc(q[1])}</p></div>`).join("")}<p style="font-size:14px">会员可以用<button class="linkbtn" data-go="review">数据复盘工具</button>上传后台数据表，自动回答这三个问题。</p></div>`:""}
           ${s.tip?`<p class="tip">小提示：${esc(s.tip)}</p>`:""}
         </div>
       </li>`).join("")}
@@ -266,7 +268,8 @@ function daily(d){
 function render(){
   applySkin(account().skin);
   const id = route(); const d = DIRS.find(x=>x.id===id);
-  const body = id==="login" ? (Auth.current() ? home() : loginPage()) : (d ? page(d) : home());
+  const tool = typeof TOOL_PAGES !== "undefined" ? TOOL_PAGES[id] : null;
+  const body = id==="login" ? (Auth.current() ? home() : loginPage()) : tool ? tool() : (d ? page(d) : home());
   app.innerHTML = topbar() + body + `
   <footer><span>数据来源：今日热榜的微信 24 小时热文榜（2026-10-26 快照）、搜狗微信搜索。不登录、不绕过任何验证。</span><span>这是演示版，2026 年 10 月 29 日更新。</span></footer>` + settings();
 }
