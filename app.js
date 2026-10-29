@@ -49,12 +49,12 @@ const shiftDate = (id, n) => { const t = new Date(id+"T12:00:00+08:00"); t.setDa
 function toast(msg, ms=3000){ const t = document.getElementById("toast"); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(()=>{ t.hidden = true; }, ms); }
 
 // ===== 皮肤 =====
-function applySkin(id){ if(!id || id==="qian") delete document.documentElement.dataset.skin; else document.documentElement.dataset.skin = id; }
+function applySkin(){ delete document.documentElement.dataset.skin; }  // 皮肤功能暂时下线
 
 // ===== 小彩纸 =====
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function confetti(x, y, n=14){
-  if(reduce) return;
+  return;  // 高级版设计不放彩纸
   const cols = ["--sun","--coral","--mint","--grape","--sky"].map(v=>getComputedStyle(document.documentElement).getPropertyValue(v));
   for(let i=0;i<n;i++){
     const p = document.createElement("i"); p.className = "confetti"; p.style.background = cols[i%cols.length];
@@ -66,7 +66,10 @@ function confetti(x, y, n=14){
 
 // ===== 组件 =====
 const badge = d => `<span class="badge" style="background:var(--${d.c})" aria-hidden="true">${d.ch}</span>`;
-const level = d => `<span class="stars" title="难度：${esc(d.level)}">${STARS[d.level]}</span> <span class="chip ${d.lv}">${esc(d.level)}</span>`;
+const LV = {"入门友好":1,"适中":2,"难":3,"不建议新手":3};
+const level = d => `<span class="stars" role="img" aria-label="难度：${esc(d.level)}">${[1,2,3].map(i=>`<i class="${i<=LV[d.level]?"on":""}"></i>`).join("")}</span> <span class="chip ${d.lv}">${esc(d.level)}</span>`;
+// 首页印章：朱砂方印「新手向导」（从右列读起），全站唯一的强调色
+const SEAL = `<svg class="seal" viewBox="0 0 120 120" role="img" aria-label="新手向导印章"><rect x="6" y="6" width="108" height="108" rx="10" fill="none" stroke="currentColor" stroke-width="5"/><rect x="14" y="14" width="92" height="92" rx="6" fill="currentColor"/><g fill="#fff" font-family="Noto Serif SC,Songti SC,serif" font-weight="900" font-size="36" text-anchor="middle"><text x="80" y="55">新</text><text x="80" y="97">手</text><text x="40" y="55">向</text><text x="40" y="97">导</text></g></svg>`;
 const doneCount = id => ((account().progress||{})[id]||[]).length;
 
 function topbar(){
@@ -113,7 +116,6 @@ function settings(){
       <select id="set-dir" aria-label="我的方向"><option value="">还没选</option>${DIRS.map(x=>`<option value="${x.id}" ${x.id===a.direction?"selected":""}>${esc(x.name)}</option>`).join("")}</select>
       <p style="font-size:13px;color:var(--muted)">换方向不会清掉原方向的进度，切回来还在。</p>
     </section>
-    ${skinPicker()}
     <section style="display:grid;gap:8px">
       <h3>导入以前的记录</h3>
       <p style="font-size:13px;color:var(--muted)">用过 Claude 版向导的，把拿到的记录码整段粘贴进来：方向、进度和每日记录会并入${ph?"这个账号":"访客模式"}，已有的记录不会被覆盖。</p>
@@ -126,16 +128,14 @@ function settings(){
 // ===== 页面：首页 =====
 function home(){
   const a = account(); const mine = DIRS.find(x=>x.id===a.direction);
-  const sk = SKINS.find(s=>s.id===(a.skin||"qian")) || SKINS[0];
   return `
   <header class="hero">
-    <div style="display:grid;gap:8px">
-      <span class="bubble">嗨，小白！一起开号吧</span>
-      <h1 class="paper-title" aria-label="公众号新手向导">${"公众号新手向导".split("").map((ch,i)=>`<span style="--r:${[-4,3,-2,4,-3,2,-4][i]}deg;--c:var(--${["sun","coral","mint","grape","sky","sun","coral"][i]})" aria-hidden="true">${ch}</span>`).join("")}</h1>
-      <p class="lede">先挑一个适合你的方向，再照着 9 步一步步做。注册后，你的方向、进度和每天做了什么都记在自己的账号里。</p>
-      ${Auth.current()?"":`<button class="btn" data-go="login">免费注册，开始记录</button>`}
+    <div style="display:grid;gap:14px">
+      <h1>开一个公众号，<br>从选对方向开始。</h1>
+      <p class="lede">12 个方向的门槛、红线和真实爆文都摆在这里。选定以后，照着 9 步一步步做，每天做了什么都记在你自己的账号里。</p>
+      <div class="chips" style="gap:12px">${Auth.current()?`<button class="btn" data-go="tools">打开工具箱</button>`:`<button class="btn" data-go="login">免费注册</button><button class="pill" data-go="tools">先看看工具箱</button>`}</div>
     </div>
-    ${skinArt(sk, "mascot")}
+    ${SEAL}
   </header>
   ${mine ? `<button class="dir mine" data-go="${mine.id}">${badge(mine)}<span style="font-size:12px;font-weight:900;color:var(--ok)">我的方向</span><span class="name">${esc(mine.name)}</span><p>已完成 ${doneCount(mine.id)}/${N} 步，点进去看今天要做的事和每日记录。</p></button>` : ""}
   <div class="memo"><b>先说实话：</b>新号起步涨粉慢，流量主收入要等关注者攒够、后台开通后才有。这里不承诺收益，只帮你少走弯路。</div>
