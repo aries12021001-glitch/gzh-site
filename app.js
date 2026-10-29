@@ -77,6 +77,7 @@ function topbar(){
   return `<nav class="topbar" aria-label="顶部">
     <button class="brand" data-go="">公众号新手向导</button>
     <span style="flex:1"></span>
+    <button class="pill small" data-go="create">写一篇</button>
     <button class="pill small" data-go="tools">工具箱</button>
     ${mine?`<button class="pill small" data-go="${mine.id}">我的方向：${esc(mine.name)}</button>`:""}
     ${ph ? `<button class="avatar" data-open-settings aria-label="打开设置" aria-expanded="${drawer}">${esc(ph.slice(-2))}</button>`
@@ -133,7 +134,7 @@ function home(){
     <div style="display:grid;gap:14px">
       <h1>开一个公众号，<br>从选对方向开始。</h1>
       <p class="lede">12 个方向的门槛、红线和真实爆文都摆在这里。选定以后，照着 9 步一步步做，每天做了什么都记在你自己的账号里。</p>
-      <div class="chips" style="gap:12px">${Auth.current()?`<button class="btn" data-go="tools">打开工具箱</button>`:`<button class="btn" data-go="login">免费注册</button><button class="pill" data-go="tools">先看看工具箱</button>`}</div>
+      <div class="chips" style="gap:12px"><button class="btn" data-go="create">开始写一篇</button>${Auth.current()?`<button class="pill" data-go="tools">打开工具箱</button>`:`<button class="pill" data-go="login">免费注册</button>`}</div>
     </div>
     ${SEAL}
   </header>
