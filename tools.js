@@ -314,7 +314,7 @@ function reviewPage(t){
         <p>${q1?`<b>${esc(q1.type)}</b>，平均打开率 ${pct(q1.open)}。下周多试这类标题。`:"数据表里没有「打开率」或「送达阅读率」这一列。"}</p></div>
       <div class="qa"><h3>2. 哪类文章更值得读完、收藏和分享？</h3><p class="why">说明内容是否真正解决了问题。</p>
         <p>${q2?`<b>${esc(q2.type)}</b>，完读率 ${pct(q2.finish)}，每千次阅读有 ${fx(q2.engage)} 次分享和收藏。这类内容对读者最有用，值得多做。`:"数据表里没有「完成率」「分享」「收藏」这几列。"}</p></div>
-      <div class="qa"><h3>3. 哪类文章的收入相对稳定，制作成本也能接受？</h3><p class="why">说明这类文章能不能长期做下去。</p>
+      <div class="qa"><h3>3. 哪类文章的收入相对稳定，制作成本也能接受？</h3>
         <p>${q3?`<b>${esc(q3.type)}</b>，平均每篇收入 ${fx(q3.income)} 元${q3.cv!=null?`，波动 ${fx(q3.cv,2)}（越小越稳）`:""}${parseFloat(reviewHours[q3.type])>0?`，每小时约 ${fx(q3.income/parseFloat(reviewHours[q3.type]))} 元`:"。在上表填上每篇花几小时，结果会把成本算进去"}。`:"数据表里没有收入这一列。流量主收入在后台「流量主 → 数据统计」里单独导出，可以把收入列加进表里再上传。"}</p></div>
     </section>`;
   }

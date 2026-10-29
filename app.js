@@ -220,7 +220,7 @@ function page(d){
           ${s.minsheng && d.ready?`<p class="mine-note">${esc(s.minsheng)}</p>`:""}
           ${s.minsheng && !d.ready && i===4?`<p class="pending">本方向的写作标准还在根据真实爆文整理，11 月中旬补上。</p>`:""}
           ${s.link?`<p style="font-size:14px"><a href="${s.link[1]}" target="_blank" rel="noopener">${esc(s.link[0])}</a></p>`:""}
-          ${s.qs?`<div class="qa-list">${s.qs.map((q,j)=>`<div class="qa"><b>${j+1}. ${esc(q[0])}</b><p class="why">${esc(q[1])}</p></div>`).join("")}<p style="font-size:14px">会员可以用<button class="linkbtn" data-go="review">数据复盘工具</button>上传后台数据表，自动回答这三个问题。</p></div>`:""}
+          ${s.qs?`<div class="qa-list"><h4 style="margin:0;font-size:16px">每周复盘三个问题：</h4>${s.qs.map((q,j)=>`<div class="qa"><b>${j+1}. ${esc(q[0])}</b>${q[1]?`<p class="why">${esc(q[1])}</p>`:""}</div>`).join("")}<p style="font-size:14px">会员可以用<button class="linkbtn" data-go="review">数据复盘工具</button>上传后台数据表，自动回答这三个问题。</p></div>`:""}
           ${s.tip?`<p class="tip">小提示：${esc(s.tip)}</p>`:""}
         </div>
       </li>`).join("")}
