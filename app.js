@@ -124,13 +124,13 @@ function home(){
   <header class="hero">
     <div style="display:grid;gap:8px">
       <span class="bubble">嗨，小白！一起开号吧</span>
-      <h1><span class="hl">公众号</span>新手向导</h1>
+      <h1 class="paper-title" aria-label="公众号新手向导">${"公众号新手向导".split("").map((ch,i)=>`<span style="--r:${[-4,3,-2,4,-3,2,-4][i]}deg;--c:var(--${["sun","coral","mint","grape","sky","sun","coral"][i]})" aria-hidden="true">${ch}</span>`).join("")}</h1>
       <p class="lede">先挑一个适合你的方向，再照着 9 步一步步做。注册后，你的方向、进度和每天做了什么都记在自己的账号里。</p>
       ${Auth.current()?"":`<button class="btn" data-go="login">免费注册，开始记录</button>`}
     </div>
     ${skinArt(sk, "mascot")}
   </header>
-  ${mine ? `<button class="dir mine" data-go="${mine.id}">${badge(mine)}<span style="font-size:12px;font-weight:900;color:var(--ok)">我的方向</span><span class="name">${esc(mine.name)} →</span><p>已完成 ${doneCount(mine.id)}/${N} 步，点进去看今天要做的事和每日记录。</p></button>` : ""}
+  ${mine ? `<button class="dir mine" data-go="${mine.id}">${badge(mine)}<span style="font-size:12px;font-weight:900;color:var(--ok)">我的方向</span><span class="name">${esc(mine.name)}</span><p>已完成 ${doneCount(mine.id)}/${N} 步，点进去看今天要做的事和每日记录。</p></button>` : ""}
   <div class="memo"><b>先说实话：</b>新号起步涨粉慢，流量主收入要等关注者攒够、后台开通后才有。这里不承诺收益，只帮你少走弯路。</div>
   <section style="display:grid;gap:14px">
     <h2>选方向前，先问自己 3 个问题</h2>
@@ -158,7 +158,7 @@ function home(){
 function loginPage(){
   const s = loginStep;
   return `
-  <button class="back" data-go="">← 返回首页</button>
+  <button class="back" data-go="">返回首页</button>
   <section class="sticker login">
     <h1 style="font-size:32px">登录 / 注册</h1>
     <p style="font-size:14px;color:var(--muted)">用手机号就行，没注册过的号码会自动注册。</p>
@@ -176,7 +176,7 @@ function loginPage(){
 function page(d){
   const a = account(); const done = new Set((a.progress||{})[d.id]||[]); const pct = Math.round(done.size/N*100);
   return `
-  <button class="back" data-go="">← 返回选方向</button>
+  <button class="back" data-go="">返回选方向</button>
   <header style="display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center">
     <span class="badge" style="background:var(--${d.c});width:72px;height:72px;font-size:36px" aria-hidden="true">${d.ch}</span>
     <div style="display:grid;gap:4px;min-width:0">
@@ -190,7 +190,7 @@ function page(d){
   <section class="sticker" style="gap:10px">
     <h2>写文章</h2>
     <p style="font-size:14px;color:var(--muted)">写文章暂时用 Claude 版：粘贴官方原文资料，Claude 只用资料里的数字写，缺的地方标【待补】，写完自动按去 AI 味标准打分。需要能访问 claude.ai 并登录。</p>
-    <a class="btn" href="https://claude.ai/artifact/Mg7dzg3ZoovB4BX3aEYPbM#${d.id}" target="_blank" rel="noopener" style="text-decoration:none">去 Claude 版写文章 ↗</a>
+    <a class="btn" href="https://claude.ai/artifact/Mg7dzg3ZoovB4BX3aEYPbM#${d.id}" target="_blank" rel="noopener" style="text-decoration:none">去 Claude 版写文章（新窗口打开）</a>
   </section>
   <div class="two">
     <div class="sticker"><dl><dt>适合谁</dt><dd>${esc(d.who)}</dd><dt>真实爆文</dt><dd>${esc(d.example)}</dd><dt>可以搜</dt><dd>${esc(d.kw)}</dd></dl></div>
@@ -212,7 +212,7 @@ function page(d){
           ${s.table?`<div class="tbl"><table><thead><tr><th>开头句式</th><th>骨架</th></tr></thead><tbody>${s.table.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join("")}</tbody></table></div><p style="font-size:14px">本方向的真实爆文：${esc(d.example)}</p><p style="font-size:14px;color:var(--bad);font-weight:700">${esc(s.rule)}</p>`:""}
           ${s.minsheng && d.ready?`<p class="mine-note">${esc(s.minsheng)}</p>`:""}
           ${s.minsheng && !d.ready && i===4?`<p class="pending">本方向的写作标准还在根据真实爆文整理，11 月中旬补上。</p>`:""}
-          ${s.link?`<p style="font-size:14px"><a href="${s.link[1]}" target="_blank" rel="noopener">${esc(s.link[0])} ↗</a></p>`:""}
+          ${s.link?`<p style="font-size:14px"><a href="${s.link[1]}" target="_blank" rel="noopener">${esc(s.link[0])}</a></p>`:""}
           ${s.tip?`<p class="tip">小提示：${esc(s.tip)}</p>`:""}
         </div>
       </li>`).join("")}
@@ -231,9 +231,9 @@ function daily(d){
   <section style="display:grid;gap:14px">
     <h2>每日记录</h2>
     <div class="datebar">
-      <button class="pill" data-day="${shiftDate(vd,-1)}" aria-label="前一天">← 前一天</button>
+      <button class="pill" data-day="${shiftDate(vd,-1)}" aria-label="前一天">前一天</button>
       <input type="date" id="day-pick" value="${vd}" max="${today}" aria-label="选择日期">
-      <button class="pill" data-day="${shiftDate(vd,1)}" ${isToday?"disabled":""} aria-label="后一天">后一天 →</button>
+      <button class="pill" data-day="${shiftDate(vd,1)}" ${isToday?"disabled":""} aria-label="后一天">后一天</button>
       ${isToday?`<span class="chip ok">今天</span>`:`<button class="pill" data-day="${today}">回到今天</button>`}
     </div>
     ${marks.length?`<div class="chips" style="gap:8px"><span style="font-size:13px;color:var(--muted)">有记录的日子：</span>${marks.map(k=>`<button class="pill small" data-day="${k}">${k.slice(5)}</button>`).join("")}</div>`:""}
@@ -256,7 +256,7 @@ function render(){
   const id = route(); const d = DIRS.find(x=>x.id===id);
   const body = id==="login" ? (Auth.current() ? home() : loginPage()) : (d ? page(d) : home());
   app.innerHTML = topbar() + body + `
-  <footer><span>数据来源：今日热榜·微信 24 小时热文榜（2026-10-26 快照）、搜狗微信搜索。不登录、不绕过任何验证。</span><span>演示版 · 2026-10-28</span></footer>` + settings();
+  <footer><span>数据来源：今日热榜的微信 24 小时热文榜（2026-10-26 快照）、搜狗微信搜索。不登录、不绕过任何验证。</span><span>这是演示版，2026 年 10 月 29 日更新。</span></footer>` + settings();
 }
 
 function startCountdown(){
