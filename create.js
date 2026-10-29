@@ -89,8 +89,9 @@ function createPage(){
         <div class="opts">${CR.layouts.map(l=>opt("layout", l.id, l.name, "", s.layout===l.id, l.vip && !vip)).join("")}</div>
       </section>
       <section class="cstep"><h2><span class="num">7</span>出稿</h2>
-        <p style="font-size:14px;color:var(--muted)">AI 会先去政府网站和官方媒体查原文、查最新数据，再按你上面的选择写全文。每个数字都附出处链接，查不到的标【待补】，不会编。写一篇大约 1~3 分钟。</p>
-        ${account().writerPass ? `<p style="font-size:13px;color:var(--muted)">写作口令已保存在这台设备上。<button class="linkbtn" data-cr-forget>清除口令</button></p>`
+        ${!WRITER_URL ? `<p style="font-size:14px;color:var(--muted)">点「AI 写全文」会在新窗口打开 Claude 版，带上你上面的全部选择，打开就自动开始写（需要能打开 claude.ai，第一次要点「允许」）。具体数字和政策会标成【待补】并告诉你去哪个官网查；想让数字直接写进去，在那边贴上官方原文再写一次。</p>`
+        : `<p style="font-size:14px;color:var(--muted)">AI 会先去政府网站和官方媒体查原文、查最新数据，再按你上面的选择写全文。每个数字都附出处链接，查不到的标【待补】，不会编。写一篇大约 1~3 分钟。</p>`}
+        ${!WRITER_URL ? "" : account().writerPass ?`<p style="font-size:13px;color:var(--muted)">写作口令已保存在这台设备上。<button class="linkbtn" data-cr-forget>清除口令</button></p>`
           : `<label style="display:grid;gap:6px;font-size:14px">写作口令（演示期 AI 写作只对站长开放）<input id="cr-pass" class="field" type="password" autocomplete="off" placeholder="输入口令后才能写全文"></label>`}
         <div class="chips" style="gap:12px"><button class="btn" data-cr-full ${crGen.busy?"disabled":""}>${crGen.busy?"正在写……":"AI 写全文"}</button><button class="pill" data-cr-brief>只出写作提纲（免费）</button></div>
       </section>
@@ -103,7 +104,8 @@ function createPage(){
 }
 let crBrief = "";
 // AI 写全文：经 Cloudflare 上的中转调用 Claude，密钥不在网页里
-const WRITER_URL = "";
+const WRITER_URL = "";   // 中转部署好以后填上；空着就跳到 Claude 版写
+const CLAUDE_GUIDE = "https://claude.ai/artifact/Mg7dzg3ZoovB4BX3aEYPbM";
 let crGen = {busy:false, text:"", status:"", src:[], err:"", stop:""};
 const genBody = t => (t.split("【正文】")[1] || t).split("【出处】")[0].replace(/^## .*$/gm,"").replace(/【配图[^】]*】/g,"");
 function genHTML(){
@@ -127,7 +129,11 @@ function genHTML(){
 async function crWrite(){
   const s = crState(); const pass = account().writerPass;
   if(!s.topic){ toast("先写一个选题"); return; }
-  if(!WRITER_URL){ crGen = {busy:false, text:"", status:"", src:[], err:"AI 写作服务还没接上：中转程序部署好以后才能用。", stop:""}; render(); return; }
+  if(!WRITER_URL){ // API 还没接：带着选项跳到 Claude 版，打开就自动开始写
+    const img = CR.images.find(i=>i.id===s.imgStyle);
+    const q = new URLSearchParams({auto:1, type:s.type, topic:s.topic, title:s.title||"", words:s.words, img:img?img.name:"", n:s.imgCount});
+    window.open(`${CLAUDE_GUIDE}#${s.dir}?${q}`, "_blank", "noopener"); render(); return;
+  }
   if(!pass){ toast("先填写作口令"); document.getElementById("cr-pass")?.focus(); return; }
   crGen = {busy:true, text:"", status:"", src:[], err:"", stop:""}; render();
   document.getElementById("cr-gen")?.scrollIntoView({block:"start", behavior:"smooth"});
@@ -241,7 +247,7 @@ app.addEventListener("click", e=>{
     const title = isVip() ? makeTitles({who:d.dir==="minsheng"?"打工人":"读者", what:topic, num:"", gain:"能少走弯路"})[0].t : crState().title;
     crSave(Object.assign(d, {topic, title, imgStyle:isVip()?"photo":"data", layout:"a"})); crTry = null; crChanged = "";
     crNote = isVip() ? "" : "已按免费方案选好。开通会员后，自动选题会用最新热点，标题用爆款公式，还能配 AI 写实照片。";
-    if(WRITER_URL && account().writerPass){ crBrief = ""; crWrite(); return; }
+    if(!WRITER_URL || account().writerPass){ crBrief = ""; crWrite(); return; }
     crBrief = buildBrief(crState());
     render(); document.getElementById("cr-brief")?.scrollIntoView({block:"center"}); return;
   }
