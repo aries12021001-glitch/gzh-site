@@ -113,6 +113,12 @@ function settings(){
       <p style="font-size:13px;color:var(--muted)">换方向不会清掉原方向的进度，切回来还在。</p>
     </section>
     ${skinPicker()}
+    <section style="display:grid;gap:8px">
+      <h3>导入以前的记录</h3>
+      <p style="font-size:13px;color:var(--muted)">用过 Claude 版向导的，把拿到的记录码整段粘贴进来：方向、进度和每日记录会并入${ph?"这个账号":"访客模式"}，已有的记录不会被覆盖。</p>
+      <textarea id="imp-text" rows="4" aria-label="记录码" placeholder='以 {"gzh":1 开头的一段文字' style="font:inherit;font-size:13px;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--sheet);color:var(--ink);width:100%"></textarea>
+      <button class="pill" data-import style="justify-self:start">导入</button>
+    </section>
   </aside>`;
 }
 
@@ -226,7 +232,9 @@ function daily(d){
   const today = tokyoDate(); const vd = viewDate || today; const isToday = vd===today;
   const t = days[vd] || {}; const you = t.you || {};
   const youItems = YOU_DAILY.filter(x=>!x.monday || (isToday ? isMonday() : !!you[x.key]));
-  const marks = Object.keys(days).filter(k=>k!==vd && Object.values(days[k].you||{}).some(Boolean)).sort().reverse().slice(0,10);
+  const cl = t.claude || {}; const clKeys = Object.keys(cl).sort((x,y)=>String(cl[x].time||"").localeCompare(String(cl[y].time||"")));
+  const hasRec = k => Object.values(days[k].you||{}).some(Boolean) || Object.keys(days[k].claude||{}).length || days[k].notes;
+  const marks = Object.keys(days).filter(k=>k!==vd && hasRec(k)).sort().reverse().slice(0,10);
   return `
   <section style="display:grid;gap:14px">
     <h2>每日记录</h2>
@@ -239,12 +247,16 @@ function daily(d){
     ${marks.length?`<div class="chips" style="gap:8px"><span style="font-size:13px;color:var(--muted)">有记录的日子：</span>${marks.map(k=>`<button class="pill small" data-day="${k}">${k.slice(5)}</button>`).join("")}</div>`:""}
     <div class="two">
       <div class="sticker" style="background:var(--sun-soft)"><h3>Claude ${isToday?"今天做":"这天做了"}</h3>
-        <ul class="task">${CLAUDE_DAILY.map(c=>`<li><div>${esc(c.t)}</div><div><span class="chip idle">正式上线后接入</span></div></li>`).join("")}</ul>
-        <p style="font-size:13px;color:var(--muted)">演示版还没有接自动采集和写稿任务，上线后这里会自动显示每次运行的真实结果。</p>
+        ${clKeys.length ? `<ul class="task">${clKeys.map(k=>`<li><div>${esc(cl[k].time||"")} ${esc(cl[k].task||k)}</div><div><span class="chip ${cl[k].ok===false?"bad":"ok"}">${cl[k].ok===false?"失败":"已完成"}</span> <span style="font-size:13px;color:var(--muted)">${esc(cl[k].result||"")}</span></div></li>`).join("")}</ul>
+          <p style="font-size:13px;color:var(--muted)">这些是从 Claude 版导入的真实运行记录。</p>`
+        : isToday ? `<ul class="task">${CLAUDE_DAILY.map(c=>`<li><div>${esc(c.t)}</div><div><span class="chip idle">正式上线后接入</span></div></li>`).join("")}</ul>
+          <p style="font-size:13px;color:var(--muted)">演示版还没有接自动采集和写稿任务，上线后这里会自动显示每次运行的真实结果。</p>`
+        : `<p style="font-size:14px;color:var(--muted)">这天没有记录。</p>`}
       </div>
       <div class="sticker" style="background:var(--mint-soft)"><h3>你${isToday?"今天做":"这天做了"}</h3>
         ${isToday?`<ul class="task">${youItems.map(y=>`<li><label><input class="stamp mini" type="checkbox" data-you="${y.key}" ${you[y.key]?"checked":""}><span>${esc(y.t)}</span></label></li>`).join("")}</ul>`
-          :(youItems.length?`<ul class="task">${youItems.map(y=>`<li>✓ ${esc(y.t)}</li>`).join("")}</ul>`:`<p style="font-size:14px;color:var(--muted)">这天没有打勾记录。</p>`)}
+          :(youItems.length?`<ul class="task">${youItems.map(y=>`<li>✓ ${esc(y.t)}</li>`).join("")}</ul>`:(t.notes?"":`<p style="font-size:14px;color:var(--muted)">这天没有打勾记录。</p>`))}
+        ${t.notes?`<p style="font-size:14px">备注：${esc(t.notes)}</p>`:""}
       </div>
     </div>
   </section>`;
@@ -269,6 +281,21 @@ function startCountdown(){
 app.addEventListener("click", e=>{
   if(e.target.closest("[data-open-settings]")){ drawer = true; render(); document.querySelector(".drawer [data-close-settings]")?.focus(); return; }
   if(e.target.closest("[data-close-settings]")){ drawer = false; render(); document.querySelector(".topbar .avatar")?.focus(); return; }
+  if(e.target.closest("[data-import]")){
+    let rec; try{ rec = JSON.parse(document.getElementById("imp-text").value.trim()); }catch(err){ toast("记录码格式不对，请完整复制后再粘贴"); return; }
+    if(!rec || rec.gzh !== 1){ toast("这不是向导的记录码"); return; }
+    let n = 0;
+    patch(a=>{
+      if(rec.direction && DIRS.some(x=>x.id===rec.direction)) a.direction = rec.direction;
+      if(rec.skin && SKINS.some(s=>s.id===rec.skin)) a.skin = rec.skin;
+      a.progress = a.progress||{}; for(const k in (rec.progress||{})){ a.progress[k] = [...new Set([...(a.progress[k]||[]), ...rec.progress[k]])].filter(i=>Number.isInteger(i)&&i>=0&&i<N).sort((x,y)=>x-y); }
+      a.days = a.days||{};
+      for(const day in (rec.days||{})){ if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue; const src = rec.days[day], cur = a.days[day] || {date:day};
+        cur.claude = Object.assign({}, src.claude||{}, cur.claude||{}); cur.you = Object.assign({}, src.you||{}, cur.you||{});
+        if(src.notes && !cur.notes) cur.notes = src.notes; a.days[day] = cur; n++; }
+    });
+    drawer = false; toast(`导入好了：${n} 天的记录`); if(rec.direction) location.hash = rec.direction; render(); return;
+  }
   if(e.target.closest("[data-logout]")){ Auth.logout(); drawer = false; toast("已退出登录"); render(); return; }
   if(e.target.closest("[data-send-code]")){
     const phone = document.getElementById("lg-phone").value.trim(); loginStep.phone = phone;
