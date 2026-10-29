@@ -51,3 +51,6 @@ textarea.field{line-height:1.8}
 /* 手机顶栏：网站名不换行，登录入口收进头像 */
 .topbar .brand{white-space:nowrap}
 @media (max-width:520px){.topbar .brand{font-size:17px}.topbar .pill[data-go="login"]{display:none}}
+.trend{display:flex;align-items:flex-end;gap:3px;height:34px}
+.trend span{width:8px;background:var(--coral);border-radius:2px 2px 0 0;opacity:.85}
+.trend em{font-style:normal;font-size:12px;color:var(--muted);margin-left:6px;align-self:center}

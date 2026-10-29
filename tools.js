@@ -156,6 +156,7 @@ function checkPage(t){
 
 // ===== 2. 热点选题 =====
 let topicsData = null, topicsErr = "", topicsNiche = "";
+function agoText(s){ if(!s) return ""; const t = new Date(String(s).replace(" ","T")); if(isNaN(t)) return "数据时间 "+s; const h = Math.round((Date.now()-t)/3600000); return h<1 ? "刚刚更新" : h<48 ? `${h} 小时前更新` : `${Math.round(h/24)} 天前更新`; }
 async function loadTopics(){
   if(topicsData || topicsErr) return;
   try{ const r = await fetch("topics.json", {cache:"no-cache"}); topicsData = await r.json(); }catch(e){ topicsErr = "选题数据没加载出来，刷新一下再试。"; }
@@ -170,12 +171,13 @@ function topicsPage(t){
   const cur = topicsNiche || (niches.includes(myName) ? myName : "全部");
   const list = topicsData.keywords.filter(k=>cur==="全部"||k.niche===cur);
   return toolHead(t) + `
-  <div class="memo"><b>数据说明：</b>${esc(topicsData.source)}。本次数据时间 ${esc(topicsData.to)}。${esc(topicsData.note)}</div>
+  <div class="memo"><b>数据说明：</b>${esc(topicsData.source)}。<b>${agoText(topicsData.generated_at||topicsData.to)}</b>。${esc(topicsData.note)}</div>
   <label style="display:grid;gap:6px;max-width:320px;font-weight:700">看哪个方向<select id="tp-niche" class="field"><option ${cur==="全部"?"selected":""}>全部</option>${niches.map(n=>`<option ${n===cur?"selected":""}>${esc(n)}</option>`).join("")}</select></label>
   <section style="display:grid;gap:12px">${list.map(k=>`
     <div class="sticker" style="gap:8px">
       <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><h3 style="flex:1">${esc(k.kw)}</h3><span class="chip idle">${esc(k.niche)}</span></div>
       <div class="meter" aria-label="3 天内新文 ${k.f3} 篇，共 ${k.total} 篇"><i style="width:${k.total?Math.round(k.f3/k.total*100):0}%"></i></div>
+      ${k.trend && Object.keys(k.trend).length>1 ? `<div class="trend" aria-label="近几天 3 天内新文数量">${Object.entries(k.trend).map(([d,v])=>`<span title="${esc(d)}：${v} 篇" style="height:${Math.max(3,v*3)}px"></span>`).join("")}<em>近 ${Object.keys(k.trend).length} 天走势</em></div>` : ""}
       <p style="font-size:14px">第一页 ${k.total} 篇里，<b>${k.f3} 篇</b>是 3 天内新发的。${k.f3>=8?"很多号在写，话题正热：要写就得找别人没写的角度。":k.f3>=3?"有人在写，热度一般：适合写成实用解读。":"最近几乎没人写：可能是冷门，也可能是机会，先去官方网站看有没有新政策。"}</p>
       ${k.recent.length?`<details><summary style="font-size:14px">看最新 ${k.recent.length} 篇的标题，找角度</summary><ul class="rules" style="margin-top:6px">${k.recent.map(r=>`<li>${esc(r.t)}<span style="color:var(--muted)">（${esc(r.a)}，${esc(r.d)}）</span></li>`).join("")}</ul></details>`:""}
     </div>`).join("")}
