@@ -89,17 +89,76 @@ function createPage(){
         <div class="opts">${CR.layouts.map(l=>opt("layout", l.id, l.name, "", s.layout===l.id, l.vip && !vip)).join("")}</div>
       </section>
       <section class="cstep"><h2><span class="num">7</span>出稿</h2>
-        <p style="font-size:14px;color:var(--muted)">先出写作提纲（免费）；AI 按提纲写全文要扣 20 点，写出来只用你给的资料，缺的地方标【待补】。</p>
-        <div class="chips" style="gap:12px"><button class="btn" data-cr-brief>出写作提纲</button><button class="pill" data-cr-full>AI 写全文（20 点）</button></div>
+        <p style="font-size:14px;color:var(--muted)">AI 会先去政府网站和官方媒体查原文、查最新数据，再按你上面的选择写全文。每个数字都附出处链接，查不到的标【待补】，不会编。写一篇大约 1~3 分钟。</p>
+        ${account().writerPass ? `<p style="font-size:13px;color:var(--muted)">写作口令已保存在这台设备上。<button class="linkbtn" data-cr-forget>清除口令</button></p>`
+          : `<label style="display:grid;gap:6px;font-size:14px">写作口令（演示期 AI 写作只对站长开放）<input id="cr-pass" class="field" type="password" autocomplete="off" placeholder="输入口令后才能写全文"></label>`}
+        <div class="chips" style="gap:12px"><button class="btn" data-cr-full ${crGen.busy?"disabled":""}>${crGen.busy?"正在写……":"AI 写全文"}</button><button class="pill" data-cr-brief>只出写作提纲（免费）</button></div>
       </section>
     </div>
     ${previewHTML()}
   </div>
+  ${genHTML()}
   ${crBrief ? `<section class="sticker" style="gap:10px"><h2>写作提纲</h2><div class="draft" id="cr-brief">${esc(crBrief)}</div>
     <div class="chips" style="gap:10px"><button class="pill" data-cr-copy>复制提纲</button><a class="pill" href="https://claude.ai/artifact/Mg7dzg3ZoovB4BX3aEYPbM#${esc(s.dir)}" target="_blank" rel="noopener">带着提纲去 Claude 版写全文（新窗口打开）</a></div></section>` : ""}`;
 }
 let crBrief = "";
-let crTry = null;      // 非会员点了会员项：只在预览里试看，不存进草稿
+// AI 写全文：经 Cloudflare 上的中转调用 Claude，密钥不在网页里
+const WRITER_URL = "";
+let crGen = {busy:false, text:"", status:"", src:[], err:"", stop:""};
+const genBody = t => (t.split("【正文】")[1] || t).split("【出处】")[0].replace(/^## .*$/gm,"").replace(/【配图[^】]*】/g,"");
+function genHTML(){
+  const g = crGen;
+  if(!g.busy && !g.text && !g.err) return "";
+  const done = !g.busy && g.text;
+  const ck = done ? runCheck(genBody(g.text)) : null;
+  if(ck){ const w = crState().words; ck.rows[0] = ["字数", ck.chars, Math.abs(ck.chars-w) <= w*0.2, `${w*0.8}~${w*1.2}`]; }  // 按你选的字数，上下 20% 都算达标
+  return `<section class="sticker" style="gap:12px" id="cr-gen">
+    <h2>${g.busy ? "AI 正在写" : g.err && !g.text ? "没写成" : "写好了"}</h2>
+    <p class="pv-meta" id="cr-status" aria-live="polite">${esc(g.busy ? (g.status || "正在连接……") : g.stop==="max_tokens" ? "文章太长被截断了，可以把字数调小再写一次。" : "")}</p>
+    ${g.err ? `<p class="err">${esc(g.err)}</p>` : ""}
+    <div class="draft" id="cr-out"${g.text?"":" hidden"}>${esc(g.text)}</div>
+    ${ck ? `<h3>去 AI 味检测</h3><div class="tbl"><table><thead><tr><th>项目</th><th>本文</th><th>标准</th><th>结果</th></tr></thead><tbody>
+      ${ck.rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[3]}</td><td><span class="chip ${r[2]?"ok":"warn"}">${r[2]?"达标":"要改"}</span></td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${done && g.src.length ? `<details><summary>这次查过的网页（${g.src.length} 个）</summary><ul style="font-size:13px;display:grid;gap:4px;margin-top:8px">${g.src.map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></li>`).join("")}</ul></details>` : ""}
+    ${done ? `<p style="font-size:13px;color:var(--muted)">发布前请点开出处，自己核对每个数字；标了【待补】的地方补上真实数据。发布时勾选「内容由 AI 生成」。</p>
+    <div class="chips" style="gap:10px"><button class="pill" data-cr-copyart>复制全文</button><button class="pill" data-cr-full>换一版重写</button></div>` : ""}
+  </section>`;
+}
+async function crWrite(){
+  const s = crState(); const pass = account().writerPass;
+  if(!s.topic){ toast("先写一个选题"); return; }
+  if(!WRITER_URL){ crGen = {busy:false, text:"", status:"", src:[], err:"AI 写作服务还没接上：中转程序部署好以后才能用。", stop:""}; render(); return; }
+  if(!pass){ toast("先填写作口令"); document.getElementById("cr-pass")?.focus(); return; }
+  crGen = {busy:true, text:"", status:"", src:[], err:"", stop:""}; render();
+  document.getElementById("cr-gen")?.scrollIntoView({block:"start", behavior:"smooth"});
+  const out = () => document.getElementById("cr-out"), st = () => document.getElementById("cr-status");
+  try{
+    const r = await fetch(WRITER_URL, {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({passcode:pass, dir:s.dir, type:s.type, words:s.words, topic:s.topic, title:s.title, imgStyle:s.imgStyle, imgCount:s.imgCount})});
+    if(r.status===401){ patch(a=>{ delete a.writerPass; }); throw new Error("口令不对，请重新输入。"); }
+    if(!r.ok && !r.body) throw new Error("服务出错（"+r.status+"）");
+    const rd = r.body.getReader(), dec = new TextDecoder(); let buf = "";
+    for(;;){
+      const {value, done} = await rd.read(); if(done) break;
+      buf += dec.decode(value, {stream:true}); let i;
+      while((i = buf.indexOf("\n")) >= 0){
+        const line = buf.slice(0, i); buf = buf.slice(i+1); if(!line.trim()) continue;
+        let m; try{ m = JSON.parse(line); }catch(e){ if(!r.ok) throw new Error(line.slice(0,200)); continue; }
+        if(m.t){ crGen.text += m.t; crGen.status = "正在写正文……"; const o = out(); if(o){ o.hidden = false; o.textContent = crGen.text; o.scrollTop = o.scrollHeight; } }
+        if(m.s){ crGen.status = m.s; }
+        if(m.src) crGen.src = m.src;
+        if(m.done) crGen.stop = m.stop;
+        if(m.err) crGen.err = m.err;
+        const e = st(); if(e) e.textContent = crGen.status;
+      }
+    }
+    if(!crGen.text && !crGen.err) crGen.err = "没有收到文章，请再试一次。";
+  }catch(err){
+    crGen.err = err.message==="Failed to fetch" ? "连不上 AI 写作服务。如果你在国内，可能是 Cloudflare 的默认网址被拦了。" : err.message;
+  }
+  crGen.busy = false; render();
+}
+let crTry = null;     // 非会员点了会员项：只在预览里试看，不存进草稿
 let crChanged = "";    // 刚改的是哪一项，预览里对应的位置闪一下
 
 // 预览：做成一部手机，上面是订阅号消息列表里的样子，下面是文章正文
@@ -181,17 +240,16 @@ app.addEventListener("click", e=>{
     const topic = isVip() && hot[0] ? hot[0].kw : (crState().topic || (d.dir==="minsheng" ? "公积金能交物业费了" : dir.kw.split("、")[0]));
     const title = isVip() ? makeTitles({who:d.dir==="minsheng"?"打工人":"读者", what:topic, num:"", gain:"能少走弯路"})[0].t : crState().title;
     crSave(Object.assign(d, {topic, title, imgStyle:isVip()?"photo":"data", layout:"a"})); crTry = null; crChanged = "";
+    crNote = isVip() ? "" : "已按免费方案选好。开通会员后，自动选题会用最新热点，标题用爆款公式，还能配 AI 写实照片。";
+    if(WRITER_URL && account().writerPass){ crBrief = ""; crWrite(); return; }
     crBrief = buildBrief(crState());
-    crNote = isVip() ? "" : "已按免费方案自动跑完。开通会员后，自动选题会用最新热点，标题用爆款公式，还能配 AI 写实照片。";
     render(); document.getElementById("cr-brief")?.scrollIntoView({block:"center"}); return;
   }
+  if(e.target.closest("[data-cr-forget]")){ patch(a=>{ delete a.writerPass; }); render(); return; }
+  if(e.target.closest("[data-cr-copyart]")){ navigator.clipboard.writeText(crGen.text).then(()=>toast("全文已复制")).catch(()=>toast("复制失败，请手动选中复制")); return; }
   if(e.target.closest("[data-cr-reset]")){ patch(a=>{ a.draft = {}; }); crBrief = ""; crNote = ""; crTry = null; crChanged = ""; render(); return; }
   if(e.target.closest("[data-cr-brief]")){ const s = crState(); if(!s.topic){ toast("先写一个选题"); return; } crBrief = buildBrief(s); render(); document.getElementById("cr-brief")?.scrollIntoView({block:"center"}); return; }
-  if(e.target.closest("[data-cr-full]")){
-    if(!isVip() && points() < COST.article){ crNote = `AI 写全文要 ${COST.article} 点，你现在有 ${points()} 点。买点数后可以应用。`; render(); return; }
-    if(points() < COST.article){ crNote = `点数不够：需要 ${COST.article} 点，你有 ${points()} 点。`; render(); return; }
-    patch(a=>{ a.points -= COST.article; }); crNote = ""; toast(`已扣 ${COST.article} 点（演示）。演示版还没接 AI 写作，请先带着提纲去 Claude 版写。`); render(); return;
-  }
+  if(e.target.closest("[data-cr-full]")){ if(!crGen.busy) crWrite(); return; }
   if(e.target.closest("[data-cr-copy]")){ const el = document.getElementById("cr-brief"); navigator.clipboard.writeText(el.textContent).then(()=>toast("提纲已复制")).catch(()=>{ const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("已选中，按 Ctrl+C 复制"); }); return; }
 });
 // 打字时只刷新预览（整页重画会让输入框失去焦点）；离开输入框再整页刷新，出标题候选
@@ -201,5 +259,6 @@ app.addEventListener("input", e=>{
 });
 app.addEventListener("change", e=>{
   if(e.target.id==="cr-topic" || e.target.id==="cr-title"){ crNote = ""; render(); }
+  if(e.target.id==="cr-pass" && e.target.value.trim()){ patch(a=>{ a.writerPass = e.target.value.trim(); }); render(); }
 });
 TOOL_PAGES.create = createPage;
