@@ -89,7 +89,7 @@ function createPage(){
         <div class="opts">${CR.layouts.map(l=>opt("layout", l.id, l.name, "", s.layout===l.id, l.vip && !vip)).join("")}</div>
       </section>
       <section class="cstep"><h2><span class="num">7</span>出稿</h2>
-        ${!WRITER_URL ? `<p style="font-size:14px;color:var(--muted)">点「AI 写全文」会在新窗口打开 Claude 版，带上你上面的全部选择，打开就自动开始写（需要能打开 claude.ai，第一次要点「允许」）。具体数字和政策会标成【待补】并告诉你去哪个官网查；想让数字直接写进去，在那边贴上官方原文再写一次。</p>`
+        ${!WRITER_URL ? `<p style="font-size:14px;color:var(--muted)">点「AI 写全文」会复制一段任务码（里面是你上面的全部选择）并打开 Claude 版；在那边最上面的框里粘贴，就自动开始写（需要能打开 claude.ai，第一次要点「允许」）。具体数字和政策会标成【待补】并告诉你去哪个官网查；想让数字直接写进去，在那边贴上官方原文再写一次。</p>`
         : `<p style="font-size:14px;color:var(--muted)">AI 会先去政府网站和官方媒体查原文、查最新数据，再按你上面的选择写全文。每个数字都附出处链接，查不到的标【待补】，不会编。写一篇大约 1~3 分钟。</p>`}
         ${!WRITER_URL ? "" : account().writerPass ?`<p style="font-size:13px;color:var(--muted)">写作口令已保存在这台设备上。<button class="linkbtn" data-cr-forget>清除口令</button></p>`
           : `<label style="display:grid;gap:6px;font-size:14px">写作口令（演示期 AI 写作只对站长开放）<input id="cr-pass" class="field" type="password" autocomplete="off" placeholder="输入口令后才能写全文"></label>`}
@@ -98,6 +98,7 @@ function createPage(){
     </div>
     ${previewHTML()}
   </div>
+  ${taskHTML()}
   ${genHTML()}
   ${crBrief ? `<section class="sticker" style="gap:10px"><h2>写作提纲</h2><div class="draft" id="cr-brief">${esc(crBrief)}</div>
     <div class="chips" style="gap:10px"><button class="pill" data-cr-copy>复制提纲</button><a class="pill" href="https://claude.ai/artifact/Mg7dzg3ZoovB4BX3aEYPbM#${esc(s.dir)}" target="_blank" rel="noopener">带着提纲去 Claude 版写全文（新窗口打开）</a></div></section>` : ""}`;
@@ -106,6 +107,16 @@ let crBrief = "";
 // AI 写全文：经 Cloudflare 上的中转调用 Claude，密钥不在网页里
 const WRITER_URL = "";   // 中转部署好以后填上；空着就跳到 Claude 版写
 const CLAUDE_GUIDE = "https://claude.ai/artifact/Mg7dzg3ZoovB4BX3aEYPbM";
+let crTask = "", crTaskCopied = false;
+function taskHTML(){
+  if(!crTask) return "";
+  return `<section class="sticker" style="gap:10px" id="cr-task">
+    <h2>到 Claude 版粘贴，就开始写</h2>
+    <p style="font-size:14px">${crTaskCopied ? "任务码已经复制好了。" : "浏览器没让自动复制，请点下面的「复制任务码」。"}在刚打开的 Claude 版页面最上面，点「粘贴任务码」框，按 <b>Ctrl+V</b>（手机长按选「粘贴」），马上自动开始写。</p>
+    <div class="draft" style="max-height:120px;font-size:12px">${esc(crTask)}</div>
+    <div class="chips" style="gap:10px"><button class="pill" data-cr-copytask>复制任务码</button><a class="pill" href="${CLAUDE_GUIDE}" target="_blank" rel="noopener">再打开一次 Claude 版</a></div>
+  </section>`;
+}
 let crGen = {busy:false, text:"", status:"", src:[], err:"", stop:""};
 const genBody = t => (t.split("【正文】")[1] || t).split("【出处】")[0].replace(/^## .*$/gm,"").replace(/【配图[^】]*】/g,"");
 function genHTML(){
@@ -129,10 +140,14 @@ function genHTML(){
 async function crWrite(){
   const s = crState(); const pass = account().writerPass;
   if(!s.topic){ toast("先写一个选题"); return; }
-  if(!WRITER_URL){ // API 还没接：带着选项跳到 Claude 版，打开就自动开始写
+  if(!WRITER_URL){ // API 还没接：复制「任务码」并打开 Claude 版，在那边粘贴就自动开始写
+    // claude.ai 不会把网址 # 后面的内容交给页面，所以用剪贴板传选项
     const img = CR.images.find(i=>i.id===s.imgStyle);
-    const q = new URLSearchParams({auto:1, type:s.type, topic:s.topic, title:s.title||"", words:s.words, img:img?img.name:"", n:s.imgCount});
-    window.open(`${CLAUDE_GUIDE}#${s.dir}?${q}`, "_blank", "noopener"); render(); return;
+    crTask = "GZH-TASK:" + JSON.stringify({dir:s.dir, type:s.type, topic:s.topic, title:s.title||"", words:s.words, img:img?img.name:"", n:s.imgCount});
+    const copied = navigator.clipboard ? navigator.clipboard.writeText(crTask).then(()=>true, ()=>false) : Promise.resolve(false);
+    window.open(CLAUDE_GUIDE, "_blank", "noopener");
+    copied.then(ok=>{ crTaskCopied = ok; render(); document.getElementById("cr-task")?.scrollIntoView({block:"center"}); });
+    return;
   }
   if(!pass){ toast("先填写作口令"); document.getElementById("cr-pass")?.focus(); return; }
   crGen = {busy:true, text:"", status:"", src:[], err:"", stop:""}; render();
@@ -256,6 +271,7 @@ app.addEventListener("click", e=>{
   if(e.target.closest("[data-cr-reset]")){ patch(a=>{ a.draft = {}; }); crBrief = ""; crNote = ""; crTry = null; crChanged = ""; render(); return; }
   if(e.target.closest("[data-cr-brief]")){ const s = crState(); if(!s.topic){ toast("先写一个选题"); return; } crBrief = buildBrief(s); render(); document.getElementById("cr-brief")?.scrollIntoView({block:"center"}); return; }
   if(e.target.closest("[data-cr-full]")){ if(!crGen.busy) crWrite(); return; }
+  if(e.target.closest("[data-cr-copytask]")){ navigator.clipboard.writeText(crTask).then(()=>{ crTaskCopied = true; toast("任务码已复制"); render(); }).catch(()=>toast("复制失败，请手动选中上面的任务码复制")); return; }
   if(e.target.closest("[data-cr-copy]")){ const el = document.getElementById("cr-brief"); navigator.clipboard.writeText(el.textContent).then(()=>toast("提纲已复制")).catch(()=>{ const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("已选中，按 Ctrl+C 复制"); }); return; }
 });
 // 打字时只刷新预览（整页重画会让输入框失去焦点）；离开输入框再整页刷新，出标题候选
