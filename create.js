@@ -144,8 +144,12 @@ async function crWrite(){
     // claude.ai 不会把网址 # 后面的内容交给页面，所以用剪贴板传选项
     const img = CR.images.find(i=>i.id===s.imgStyle);
     crTask = "GZH-TASK:" + JSON.stringify({dir:s.dir, type:s.type, topic:s.topic, title:s.title||"", words:s.words, img:img?img.name:"", n:s.imgCount});
-    const copied = navigator.clipboard ? navigator.clipboard.writeText(crTask).then(()=>true, ()=>false) : Promise.resolve(false);
-    window.open(CLAUDE_GUIDE, "_blank", "noopener");
+    // 先同步复制完再开新窗口：新窗口一抢走焦点，浏览器就不许再写剪贴板了
+    let ok = false;
+    try{ const ta = document.createElement("textarea"); ta.value = crTask; ta.setAttribute("readonly",""); ta.style.cssText = "position:fixed;left:-9999px;top:0";
+      document.body.appendChild(ta); ta.select(); ok = document.execCommand("copy"); ta.remove(); }catch(e){ ok = false; }
+    const copied = ok ? Promise.resolve(true) : (navigator.clipboard ? navigator.clipboard.writeText(crTask).then(()=>true, ()=>false) : Promise.resolve(false));
+    if(ok) window.open(CLAUDE_GUIDE, "_blank", "noopener");  // 没复制成功就先不跳，让你在这里点「复制任务码」
     copied.then(ok=>{ crTaskCopied = ok; render(); document.getElementById("cr-task")?.scrollIntoView({block:"center"}); });
     return;
   }
