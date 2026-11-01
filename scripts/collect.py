@@ -23,8 +23,6 @@ CN = dt.timezone(dt.timedelta(hours=8))
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
 MAIN = ("民生钱袋子", "社保 养老金 医保 公积金 个税 退休 工资 存款利率 金价 油价 消费维权 补贴".split())
-# 本号主攻重庆：重庆本地的民生词每次都抓（搜狗里写成「重庆 xx」）
-LOCAL = ("重庆民生", ["重庆 " + k for k in "社保 公积金 医保 养老金 补贴 房价 消费券 就业".split()])
 OTHERS = [
     ("健康科普辟谣", "养生 辟谣 体检"), ("情感家庭", "婚姻 中年 父母"), ("娱乐影视明星", "明星 电视剧 综艺"),
     ("体育", "足球 篮球 亚运会"), ("时政国际军事", "国际局势 军事"), ("科技数码AI", "人工智能 手机 AI工具"),
@@ -32,7 +30,7 @@ OTHERS = [
     ("教育职场", "高考 考公 职场"), ("游戏电竞", "游戏 电竞"),
 ]
 OTHER_KWS = [(n, k) for n, ks in OTHERS for k in ks.split()]
-OTHERS_PER_RUN = 6   # 加了重庆词，别的方向每次少抓几个，总请求数基本不变
+OTHERS_PER_RUN = 10
 KEEP_DAYS = 14
 
 
@@ -71,7 +69,7 @@ def main():
     by_kw = {k["kw"]: k for k in data.get("keywords", []) if "kw" in k}
 
     start = state.get("next_other", 0) % len(OTHER_KWS)
-    plan = [(MAIN[0], k, None) for k in MAIN[1]] + [(LOCAL[0], k, None) for k in LOCAL[1]] + \
+    plan = [(MAIN[0], k, None) for k in MAIN[1]] + \
            [(OTHER_KWS[(start + i) % len(OTHER_KWS)][0], OTHER_KWS[(start + i) % len(OTHER_KWS)][1], (start + i) % len(OTHER_KWS))
             for i in range(OTHERS_PER_RUN)]
 
