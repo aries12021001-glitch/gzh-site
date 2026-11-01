@@ -1,5 +1,5 @@
 {
- "next_other": 12,
+ "next_other": 22,
  "runs": [
   {
    "at": "2026-10-29T10:51+08:00",
@@ -214,6 +214,14 @@
    "ok": 20,
    "planned": 22,
    "blocked_at": "国际局势",
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-01T17:50+08:00",
+   "ok": 22,
+   "planned": 22,
+   "blocked_at": null,
    "empty": [],
    "misaligned": []
   }
