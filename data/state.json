@@ -1,5 +1,5 @@
 {
- "next_other": 8,
+ "next_other": 16,
  "runs": [
   {
    "at": "2026-10-29T10:51+08:00",
@@ -286,6 +286,14 @@
    "ok": 22,
    "planned": 22,
    "blocked_at": null,
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-02T21:14+08:00",
+   "ok": 20,
+   "planned": 22,
+   "blocked_at": "AI工具",
    "empty": [],
    "misaligned": []
   }
