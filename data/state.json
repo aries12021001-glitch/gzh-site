@@ -1,14 +1,6 @@
 {
- "next_other": 26,
+ "next_other": 2,
  "runs": [
-  {
-   "at": "2026-10-29T11:53+08:00",
-   "ok": 20,
-   "planned": 22,
-   "blocked_at": "基金",
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-10-29T15:02+08:00",
    "ok": 20,
@@ -478,6 +470,14 @@
    "ok": 20,
    "planned": 27,
    "blocked_at": "电竞",
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-07T08:55+08:00",
+   "ok": 20,
+   "planned": 27,
+   "blocked_at": "体检",
    "empty": [],
    "misaligned": []
   }
