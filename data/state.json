@@ -1,14 +1,6 @@
 {
- "next_other": 2,
+ "next_other": 12,
  "runs": [
-  {
-   "at": "2026-10-29T15:02+08:00",
-   "ok": 20,
-   "planned": 22,
-   "blocked_at": "考公",
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-10-29T17:56+08:00",
    "ok": 22,
@@ -478,6 +470,14 @@
    "ok": 20,
    "planned": 27,
    "blocked_at": "体检",
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-07T18:03+08:00",
+   "ok": 27,
+   "planned": 27,
+   "blocked_at": null,
    "empty": [],
    "misaligned": []
   }
