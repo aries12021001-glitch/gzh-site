@@ -1,14 +1,6 @@
 {
- "next_other": 6,
+ "next_other": 9,
  "runs": [
-  {
-   "at": "2026-10-31T02:52+08:00",
-   "ok": 22,
-   "planned": 22,
-   "blocked_at": null,
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-10-31T05:44+08:00",
    "ok": 22,
@@ -478,6 +470,14 @@
    "ok": 20,
    "planned": 27,
    "blocked_at": "足球",
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-11T14:12+08:00",
+   "ok": 20,
+   "planned": 27,
+   "blocked_at": "国际局势",
    "empty": [],
    "misaligned": []
   }
