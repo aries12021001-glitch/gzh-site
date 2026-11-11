@@ -1,14 +1,6 @@
 {
- "next_other": 9,
+ "next_other": 19,
  "runs": [
-  {
-   "at": "2026-10-31T05:44+08:00",
-   "ok": 22,
-   "planned": 22,
-   "blocked_at": null,
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-10-31T09:03+08:00",
    "ok": 22,
@@ -478,6 +470,14 @@
    "ok": 20,
    "planned": 27,
    "blocked_at": "国际局势",
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-11T22:18+08:00",
+   "ok": 27,
+   "planned": 27,
+   "blocked_at": null,
    "empty": [],
    "misaligned": []
   }
