@@ -1,14 +1,6 @@
 {
- "next_other": 8,
+ "next_other": 18,
  "runs": [
-  {
-   "at": "2026-10-31T17:46+08:00",
-   "ok": 22,
-   "planned": 22,
-   "blocked_at": null,
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-10-31T20:54+08:00",
    "ok": 22,
@@ -475,6 +467,14 @@
   },
   {
    "at": "2026-11-13T01:34+08:00",
+   "ok": 27,
+   "planned": 27,
+   "blocked_at": null,
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-13T07:36+08:00",
    "ok": 27,
    "planned": 27,
    "blocked_at": null,
