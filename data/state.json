@@ -1,14 +1,6 @@
 {
- "next_other": 18,
+ "next_other": 21,
  "runs": [
-  {
-   "at": "2026-10-31T20:54+08:00",
-   "ok": 22,
-   "planned": 22,
-   "blocked_at": null,
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-10-31T23:41+08:00",
    "ok": 22,
@@ -478,6 +470,14 @@
    "ok": 27,
    "planned": 27,
    "blocked_at": null,
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-13T14:41+08:00",
+   "ok": 20,
+   "planned": 27,
+   "blocked_at": "穿搭",
    "empty": [],
    "misaligned": []
   }
