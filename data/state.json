@@ -1,14 +1,6 @@
 {
- "next_other": 7,
+ "next_other": 10,
  "runs": [
-  {
-   "at": "2026-11-01T05:41+08:00",
-   "ok": 20,
-   "planned": 22,
-   "blocked_at": "基金",
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-11-01T09:14+08:00",
    "ok": 20,
@@ -478,6 +470,14 @@
    "ok": 27,
    "planned": 27,
    "blocked_at": null,
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-14T14:18+08:00",
+   "ok": 20,
+   "planned": 27,
+   "blocked_at": "军事",
    "empty": [],
    "misaligned": []
   }
