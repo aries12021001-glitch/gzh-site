@@ -1,14 +1,6 @@
 {
- "next_other": 15,
+ "next_other": 18,
  "runs": [
-  {
-   "at": "2026-11-02T09:11+08:00",
-   "ok": 20,
-   "planned": 22,
-   "blocked_at": "综艺",
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-11-02T12:00+08:00",
    "ok": 22,
@@ -478,6 +470,14 @@
    "ok": 27,
    "planned": 27,
    "blocked_at": null,
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-17T23:57+08:00",
+   "ok": 20,
+   "planned": 27,
+   "blocked_at": "热点事件",
    "empty": [],
    "misaligned": []
   }
