@@ -1,14 +1,6 @@
 {
- "next_other": 5,
+ "next_other": 15,
  "runs": [
-  {
-   "at": "2026-11-02T05:42+08:00",
-   "ok": 20,
-   "planned": 22,
-   "blocked_at": "养生",
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-11-02T09:11+08:00",
    "ok": 20,
@@ -475,6 +467,14 @@
   },
   {
    "at": "2026-11-17T03:34+08:00",
+   "ok": 27,
+   "planned": 27,
+   "blocked_at": null,
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-17T11:50+08:00",
    "ok": 27,
    "planned": 27,
    "blocked_at": null,
