@@ -1,14 +1,6 @@
 {
- "next_other": 17,
+ "next_other": 20,
  "runs": [
-  {
-   "at": "2026-11-03T00:07+08:00",
-   "ok": 22,
-   "planned": 22,
-   "blocked_at": null,
-   "empty": [],
-   "misaligned": []
-  },
   {
    "at": "2026-11-03T03:00+08:00",
    "ok": 22,
@@ -478,6 +470,14 @@
    "ok": 20,
    "planned": 27,
    "blocked_at": "法院判决",
+   "empty": [],
+   "misaligned": []
+  },
+  {
+   "at": "2026-11-19T19:35+08:00",
+   "ok": 20,
+   "planned": 27,
+   "blocked_at": "旅行",
    "empty": [],
    "misaligned": []
   }
